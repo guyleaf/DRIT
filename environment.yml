@@ -1,0 +1,16 @@
+name: drit
+channels:
+  - pytorch
+  - nvidia
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - pytorch=1.13.1
+  - torchvision=0.14.1
+  - pytorch-cuda=11.7
+  - numpy<2
+  - pip:
+      - pillow<11
+      - tensorboard<3
+      - tensorboardx<3
