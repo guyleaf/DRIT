@@ -40,3 +40,11 @@ test/.coverage
 */**/*.dylib*
 test/data/legacy_serialized.pt
 *~
+cat2dog
+cat2dog/
+logs
+logs/
+results
+results/
+outputs
+outputs/
