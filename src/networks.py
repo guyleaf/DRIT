@@ -1,9 +1,11 @@
-import  torch
-import torch.nn as nn
-from torch.autograd import Variable
 import functools
-from torch.optim import lr_scheduler
+
+import torch
+import torch.nn as nn
 import torch.nn.functional as F
+from torch.autograd import Variable
+from torch.optim import lr_scheduler
+
 
 ####################################################################
 #------------------------- Discriminators --------------------------
@@ -442,7 +444,7 @@ def get_non_linearity(layer_type='relu'):
   if layer_type == 'relu':
     nl_layer = functools.partial(nn.ReLU, inplace=True)
   elif layer_type == 'lrelu':
-    nl_layer = functools.partial(nn.LeakyReLU, negative_slope=0.2, inplace=False)
+    nl_layer = functools.partial(nn.LeakyReLU, negative_slope=0.2, inplace=True)
   elif layer_type == 'elu':
     nl_layer = functools.partial(nn.ELU, inplace=True)
   else:
@@ -562,14 +564,14 @@ class MisINSResBlock(nn.Module):
         nn.InstanceNorm2d(dim))
     self.blk1 = nn.Sequential(
         self.conv1x1(dim + dim_extra, dim + dim_extra),
-        nn.ReLU(inplace=False),
+        nn.ReLU(inplace=True),
         self.conv1x1(dim + dim_extra, dim),
-        nn.ReLU(inplace=False))
+        nn.ReLU(inplace=True))
     self.blk2 = nn.Sequential(
         self.conv1x1(dim + dim_extra, dim + dim_extra),
-        nn.ReLU(inplace=False),
+        nn.ReLU(inplace=True),
         self.conv1x1(dim + dim_extra, dim),
-        nn.ReLU(inplace=False))
+        nn.ReLU(inplace=True))
     model = []
     if dropout > 0:
       model += [nn.Dropout(p=dropout)]
@@ -586,7 +588,11 @@ class MisINSResBlock(nn.Module):
     o2 = self.blk1(torch.cat([o1, z_expand], dim=1))
     o3 = self.conv2(o2)
     out = self.blk2(torch.cat([o3, z_expand], dim=1))
-    out += residual
+    # a little buggy in pytorch 1.13.1
+    # according the issue https://github.com/pytorch/pytorch/issues/5687#issuecomment-412681482, we cannot use inplace addition after inplace ReLU.
+    # but the original code is already inplace=False, it still detect the variable changed.
+    # so, I change to inplace ReLU + addition
+    out = out + residual
     return out
 
 class GaussianNoiseLayer(nn.Module):
@@ -687,4 +693,3 @@ def remove_spectral_norm(module, name='weight'):
       del module._forward_pre_hooks[k]
       return module
   raise ValueError("spectral_norm of '{}' not found in {}".format(name, module))
-
